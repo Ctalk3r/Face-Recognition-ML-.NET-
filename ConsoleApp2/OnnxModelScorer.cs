@@ -6,7 +6,10 @@ using Microsoft.ML.Data;
 using ConsoleApp2.DataStructures;
 using System.Drawing;
 using System.IO;
+using Microsoft.ML.Transforms;
 using Microsoft.ML.Transforms.Image;
+using static Microsoft.ML.Transforms.Image.ImagePixelExtractingEstimator;
+using Microsoft.ML.Transforms.Onnx;
 
 namespace ConsoleApp2
 {
@@ -27,8 +30,6 @@ namespace ConsoleApp2
         {
             public const int imageHeight = 224;
             public const int imageWidth = 112;
-            public const float mean = 0.45f;
-            public const float variance = 0.225f;
         }
 
         public struct ReidModelSettings
@@ -65,8 +66,12 @@ namespace ConsoleApp2
             // var imagesFolder = Path.GetDirectoryName(imagesDataFile);
             // Define scoring pipeline
             var pipeline = mlContext.Transforms.LoadImages(outputColumnName: "ImageObject", imageFolder: "", inputColumnName: nameof(ImageNetData.ImagePath))
-                           .Append(mlContext.Transforms.ResizeImages(outputColumnName: "ImageObject", imageWidth: ImageNetSettings.imageWidth, imageHeight: ImageNetSettings.imageHeight, inputColumnName: "ImageObject"))
-                           .Append(mlContext.Transforms.ExtractPixels(outputColumnName: "input", inputColumnName: "ImageObject")) //, offsetImage: ImageNetSettings.mean))
+                           .Append(mlContext.Transforms.ResizeImages(outputColumnName: "ImageResized", imageWidth: ImageNetSettings.imageWidth, imageHeight: ImageNetSettings.imageHeight, inputColumnName: "ImageObject"))
+                           .Append(mlContext.Transforms.ExtractPixels("Red", "ImageResized", colorsToExtract: ColorBits.Red, offsetImage: 0.485f * 255, scaleImage: 1 / (0.299f * 255)))
+                           .Append(mlContext.Transforms.ExtractPixels("Green", "ImageResized", colorsToExtract: ColorBits.Green, offsetImage: 0.456f * 255, scaleImage: 1 / (0.224f * 255)))
+                           .Append(mlContext.Transforms.ExtractPixels("Blue", "ImageResized", colorsToExtract: ColorBits.Blue, offsetImage: 0.406f * 255, scaleImage: 1 / (0.225f * 255)))
+                           .Append(mlContext.Transforms.Concatenate(ReidModelSettings.ModelInput, "Red", "Green", "Blue"))
+                           // .Append(new OnnxScoringEstimator(mlContext, new string[] { @"mobile"}, new string[] { "data" }, modelLocation))
                            //.Append(mlContext.Transforms.NormalizeMeanVariance(outputColumnName: "Pixels", inputColumnName: "Pixels"))
                            .Append(mlContext.Transforms.ApplyOnnxModel(modelFile: modelLocation, outputColumnNames: new[] { ReidModelSettings.ModelOutput }, inputColumnNames: new[] { ReidModelSettings.ModelInput }));
                            //.Append(mlContext.Transforms.DnnFeaturizeImage(ReidModelSettings.ModelOutput, m => m.ModelSelector.ResNet50(mlContext, m.OutputColumn, m.InputColumn), "Pixels"));

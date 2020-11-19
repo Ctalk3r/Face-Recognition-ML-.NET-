@@ -33,9 +33,19 @@ namespace ConsoleApp2
             return 1 - num / Math.Sqrt(denom1 * denom2);
         }
 
+        static double EuclideanDistance(float[] a, float[] b)
+        {
+            double num = 0;
+            for (int i = 0; i < a.Length; ++i)
+            {
+                num += (a[i] - b[i]) * (a[i] - b[i]);
+            }
+            return Math.Sqrt(num);
+        }
+
         static void Main(string[] args)
         {
-            var modelFilePath = "..\\..\\..\\assets\\onnx_reid_model_faced_int.onnx";
+            var modelFilePath = "..\\..\\..\\assets\\onnx_reid_model_best.onnx";
             var imagesFolder = "..\\..\\..\\assets\\images";
 
             MLContext mlContext = new MLContext();
